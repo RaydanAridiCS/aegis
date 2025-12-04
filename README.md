@@ -7,15 +7,18 @@ A secure command-line file encryption tool built with Go. Aegis provides militar
 Aegis is a CLI application that allows you to:
 - **Seal** (encrypt) directories and their contents with password-derived keys
 - **Unseal** (decrypt) protected directories
-- **Watch** directories for changes and automatically re-encrypt
+- **Watch** directories for changes with detailed logging and diff tracking
 
-Built with strong cryptographic primitives including scrypt for key derivation, Aegis ensures your data remains protected with industry-standard security practices.
+Built with strong cryptographic primitives including AES-256-GCM and scrypt for key derivation, Aegis ensures your data remains protected with industry-standard security practices.
 
 ## Features
 
-- 🔐 **Strong Encryption**: Uses scrypt for secure key derivation from passwords
-- 📁 **Directory-Level Protection**: Encrypt entire directories at once
-- 👀 **File Watching**: Monitor directories and automatically re-seal on changes
+- 🔐 **AES-256-GCM Encryption**: Military-grade authenticated encryption with scrypt key derivation
+- 📁 **Directory-Level Protection**: Encrypt entire directories recursively at once
+- 🔑 **Secure Key Derivation**: Uses scrypt (N=32768, r=8, p=1) for password-based key generation
+- 👀 **Advanced File Watching**: Monitor directories with detailed change detection and diff logging
+- 📝 **Dual Logging System**: Generates both detailed and basic log files for watch sessions
+- 🔒 **Extension Preservation**: Original file extensions are encrypted and restored on decryption
 - 🚀 **Fast & Lightweight**: Pure Go implementation with minimal dependencies
 - 💻 **Cross-Platform**: Works on Windows, macOS, and Linux
 - 🎯 **Simple CLI**: Intuitive commands powered by Cobra
@@ -62,7 +65,7 @@ go install ./cmd/aegis/
 ### Watch a Directory
 
 ```bash
-# Monitor directory for changes and auto-seal
+# Monitor directory for changes and log all modifications
 ./aegis.exe watch /path/to/directory
 ```
 
@@ -101,7 +104,8 @@ aegis unseal [directory]
 ```
 
 #### Watch Command
-Monitors a directory for file changes and automatically re-encrypts when modifications are detected.
+
+Monitors a directory for file changes and logs all modifications with detailed diff information. Creates both detailed and basic log files in a `logs/` directory.
 
 ```bash
 aegis watch [directory]
@@ -187,35 +191,44 @@ go mod tidy
 ## Security Considerations
 
 - **Password Strength**: Use strong, unique passwords for encryption
-- **Key Derivation**: Aegis uses scrypt with secure parameters for key derivation
-- **Data Protection**: Original files are preserved until successful encryption
+- **Key Derivation**: Aegis uses scrypt with secure parameters (N=32768, r=8, p=1) for key derivation
+- **Authenticated Encryption**: AES-256-GCM provides both confidentiality and integrity
+- **Unique Cryptographic Material**: Each file gets a unique salt and nonce
+- **Extension Protection**: Original file extensions are embedded in encrypted data
 - **Memory Safety**: Sensitive data is cleared from memory after use
 
-## Roadmap
+## Technical Details
 
-- [ ] Implement core encryption/decryption logic
-- [ ] Add file integrity verification (HMAC)
-- [ ] Support for multiple encryption algorithms
-- [ ] Compressed encryption option
-- [ ] Backup and restore functionality
-- [ ] GUI version
-- [ ] Cloud storage integration
+### Encryption Process (Seal)
 
-## Contributing
+1. Generate a unique 16-byte salt per file
+2. Derive a 256-bit key using scrypt (password + salt)
+3. Create AES-256-GCM cipher
+4. Generate a unique nonce for each encryption
+5. Embed original file extension in plaintext
+6. Encrypt and authenticate data
+7. Output format: `[Salt][Nonce][Ciphertext+AuthTag]`
 
-Contributions are welcome! Please feel free to submit a Pull Request.
+### Decryption Process (Unseal)
 
-1. Fork the repository
-2. Create your feature branch (`git checkout -b feature/AmazingFeature`)
-3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
-4. Push to the branch (`git push origin feature/AmazingFeature`)
-5. Open a Pull Request
-
+1. Extract salt from encrypted file header
+2. Re-derive key using scrypt (password + stored salt)
+3. Extract nonce and ciphertext
+4. Decrypt and verify authentication tag
+5. Recover original file extension
+6. Restore file with original name and extension
 
 ## Author
 
 **Raydan Aridi**
 - GitHub: [@RaydanAridiCS](https://github.com/RaydanAridiCS)
+
+## Collaborators
+
+Current collaborators
+- Raydan Aridi — Maintainer — https://github.com/RaydanAridiCS
+- Waseem Bou Hamdan - Collaboratotr - https://github.com/WaseemBouHamdan
+- Hasan Farhat - Collaborator - 
 
 ## Acknowledgments
 
@@ -225,4 +238,4 @@ Contributions are welcome! Please feel free to submit a Pull Request.
 
 ---
 
-⚠️ **Disclaimer**: This tool is currently under development. Always maintain backups of important data before encryption.
+⚠️ **Disclaimer**: Always maintain backups of important data before encryption.
